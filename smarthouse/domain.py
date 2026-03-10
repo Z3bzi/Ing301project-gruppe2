@@ -12,6 +12,84 @@ class Measurement:
 
 # TODO: Add your own classes here!
 
+class Floor:
+    """
+    This class represents a floor in the house.
+    """
+
+    def __init__(self, level):
+        self.level = level
+        self.rooms = []
+
+class Room:
+    """
+    This class represents a room in the house.
+    """
+
+    def __init__(self, area, room_name=None):
+        self.room_name = room_name
+        self.area = area
+        self.devices = []
+
+class Device:
+    """
+    This class represents a smart device in the house.
+    """
+
+    def __init__(self, device_id, device_type, supplier, model=None, room=None):
+        self.device_id = device_id
+        self.device_type = device_type
+        self.supplier = supplier
+        self.model = model
+        self.room = room
+        self.isSensor = False
+        self.isActuator = False
+
+class Sensor(Device):
+    """
+    This class represents a sensor device in the house.
+    """
+
+    def __init__(self, device_id, device_type, supplier, model=None, room=None):
+        super().__init__(device_id, device_type, supplier, model, room)
+        self.measurements = []  # list of measurements produced by this sensor
+        self.isSensor = True
+
+    def add_measurement(self, value, unit, timestamp):
+        """
+        Create a new measurement and store it.
+        """
+        measurement = Measurement(self, timestamp, value, unit)
+        self.measurements.append(measurement)
+        return measurement
+
+class Actuator(Device):
+    """
+    This class represents an actuator device in the house.
+    """
+
+    def __init__(self, device_id, device_type, supplier, model=None, room=None):
+        super().__init__(device_id, device_type, supplier, model, room)
+        self.state = False
+        self.isActuator = True
+
+    def turn_on(self):
+        self.state = True
+
+    def turn_off(self):
+        self.state = False
+
+class Measurement:
+    """
+    This class represents a measurement taken from a sensor.
+    """
+
+    def __init__(self, sensor, timestamp, value, unit):
+        self.sensor = sensor
+        self.timestamp = timestamp
+        self.value = value
+        self.unit = unit
+
 
 class SmartHouse:
     """
