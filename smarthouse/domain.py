@@ -1,17 +1,3 @@
-class Measurement:
-    """
-    This class represents a measurement taken from a sensor.
-    """
-
-    def __init__(self, timestamp, value, unit):
-        self.timestamp = timestamp
-        self.value = value
-        self.unit = unit
-
-
-
-# TODO: Add your own classes here!
-
 class Floor:
     """
     This class represents a floor in the house.
