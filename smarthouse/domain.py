@@ -49,6 +49,9 @@ class Device:
     def is_actuator(self):
         return False
 
+    def get_device_type(self):
+        return self.device_type
+
 class Sensor(Device):
     """
     This class represents a sensor device in the house.
