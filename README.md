@@ -31,6 +31,8 @@ Systemet består av følgende klasser:
 - **`Actuator`** – Arver fra `Device`. Kan slås av/på med `turn_on()` / `turn_off()` og støtter en valgfri målverdi.
 - **`Measurement`** – Representerer en enkelt måling med verdi, enhet og tidspunkt.
 
+![Domenemodell](domainmodel/domainmodel2.svg)
+
 ## Kjøre tester
 
 Installer avhengigheter og kjør testene lokalt:
