@@ -1,8 +1,8 @@
 from unittest import TestCase, main
 
 from pathlib import Path
-import sys 
-sys.path.append(str(Path().parent.absolute()))
+import sys
+sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 from smarthouse.domain import SmartHouse
 from demo_house import DEMO_HOUSE as h
