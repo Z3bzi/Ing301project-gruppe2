@@ -4,6 +4,7 @@ title: Smart House Domain Model
 
 classDiagram
     class SmartHouse {
+        +floors: List~Floor~
         +register_floor(level: int) Floor
         +register_room(floor: Floor, room_size: float, room_name: str) Room
         +get_floors() List~Floor~
@@ -25,12 +26,6 @@ classDiagram
         +devices: List~Device~
     }
 
-    class Measurement {
-        +timestamp: datetime
-        +value: float
-        +unit: str
-    }
-
     class Device {
         <<Abstract>>
         +id: str
@@ -40,29 +35,35 @@ classDiagram
         +room: Room
         +is_sensor() bool
         +is_actuator() bool
+        +get_device_type() str
     }
 
     class Sensor {
-        <<Interface>>
+        +measurements: List~Measurement~
+        +is_sensor() bool
+        +add_measurement(value, unit, timestamp) Measurement
         +last_measurement() Measurement
     }
 
     class Actuator {
-        <<Interface>>
-        +turn_on(value: float = None)
+        +state: bool
+        +is_actuator() bool
+        +turn_on(value: float)
         +turn_off()
         +is_active() bool
     }
 
-    class SmartDevice {
-        <<Implementation>>
+    class Measurement {
+        +sensor: Sensor
+        +timestamp: str
+        +value: float
+        +unit: str
     }
 
     SmartHouse "1" *-- "0..*" Floor : contains
     Floor "1" *-- "0..*" Room : contains
     Room "1" -- "0..*" Device : registers
-    Device <|-- SmartDevice
-    Sensor <|.. SmartDevice
-    Actuator <|.. SmartDevice
-    Sensor ..> Measurement : produces
+    Device <|-- Sensor
+    Device <|-- Actuator
+    Sensor "1" *-- "0..*" Measurement : produces
     Device --> Room : belongs to
