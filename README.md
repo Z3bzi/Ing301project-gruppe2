@@ -32,23 +32,3 @@ Systemet består av følgende klasser:
 - **`Measurement`** – Representerer en enkelt måling med verdi, enhet og tidspunkt.
 
 ![Domenemodell](domainmodel/domainmodel2.svg)
-
-## Kjøre tester
-
-Installer avhengigheter og kjør testene lokalt:
-
-```bash
-pip install pytest
-pytest .
-```
-
-## GitHub Actions
-
-Testene kjøres automatisk via GitHub Actions. Workflowen trigges på to måter:
-
-- **Ved innlevering** – push `handin`-taggen:
-  ```bash
-  git tag handin
-  git push origin handin
-  ```
-- **Manuelt** – gå til **Actions**-fanen på GitHub og velg "Run workflow".
