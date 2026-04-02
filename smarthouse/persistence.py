@@ -1,11 +1,6 @@
-from pathlib import Path
-import sys
-sys.path.append(str(Path().absolute()))
-
-
 import sqlite3
 from typing import Optional
-from smarthouse.domain import Measurement
+from smarthouse.domain import Measurement, SmartHouse, Sensor, Actuator, Floor, Room
 
 class SmartHouseRepository:
     """
@@ -41,10 +36,39 @@ class SmartHouseRepository:
         all referenced objects within the object structure (e.g. floors, rooms, devices) 
         are retrieved as well. 
         """
-        # TODO: START here! remove the following stub implementation and implement this function 
-        #       by retrieving the data from the database via SQL `SELECT` statements.
-        return NotImplemented
+        
+        smarthouse = SmartHouse()
+        cursor = self.cursor()
 
+        # Query distinct floor levels and register them in the SmartHouse
+        cursor.execute("SELECT DISTINCT floor FROM rooms ORDER BY floor")
+        floors = {}
+        for row in cursor.fetchall():
+            floor = smarthouse.register_floor(row[0])
+            floors[row[0]] = floor
+
+        # Query all rooms, register each on its floor, and build a mapping from db id to Room object
+        cursor.execute("SELECT id, floor, area, name FROM rooms")
+        room_map = {}
+        for row in cursor.fetchall():
+            room_id, floor_level, area, name = row
+            floor = floors[floor_level]
+            room = smarthouse.register_room(floor, area, name)
+            room.db_id = room_id  # store for later use in statistics methods
+            room_map[room_id] = room
+        
+        # Query all devices, instantiate as Sensor or Actuator based on category, and register in their room
+        cursor.execute("SELECT id, room, kind, category, supplier, product FROM devices")
+        for row in cursor.fetchall():
+            dev_id, room_id, kind, category, supplier, product = row
+            if category == "sensor":
+                device = Sensor(dev_id, kind, supplier, product)
+            elif category == "actuator":
+                device = Actuator(dev_id, kind, supplier, product)
+            smarthouse.register_device(room_map[room_id], device)
+        
+        cursor.close()
+        return smarthouse
 
     def get_latest_reading(self, sensor) -> Optional[Measurement]:
         """
@@ -52,7 +76,7 @@ class SmartHouseRepository:
         Returns None if the given object has no sensor readings.
         """
         # TODO: After loading the smarthouse, continue here
-        return NotImplemented
+        raise NotImplementedError
 
 
     def update_actuator_state(self, actuator):
@@ -76,14 +100,14 @@ class SmartHouseRepository:
         located in that room, filtering the measurement by given time range.
         The latter is provided by two strings, each containing a date in the ISO 8601 format.
         If one argument is empty, it means that the upper and/or lower bound of the time range are unbounded.
-        The result should be a dictionary where the keys are strings representing dates (iso format) and 
+        The result should be a dictionary where the keys are strings representing dates (iso format) and
         the values are floating point numbers containing the average temperature that day.
         """
-        # TODO: This and the following statistic method are a bit more challenging. Try to design the respective 
-        #       SQL statements first in a SQL editor like Dbeaver and then copy it over here.  
-        return NotImplemented
+        # TODO: This and the following statistic method are a bit more challenging. Try to design the respective
+        #       SQL statements first in a SQL editor like Dbeaver and then copy it over here.
+        raise NotImplementedError
 
-    
+
     def calc_hours_with_humidity_above(self, room, date: str) -> list:
         """
         This function determines during which hours of the given day
@@ -92,15 +116,4 @@ class SmartHouseRepository:
         The result is a (possibly empty) list of number representing hours [0-23].
         """
         # TODO: implement
-        return NotImplemented
-
-
-# DEMO:
-repo = SmartHouseRepository("data/db.sql")
-cursor = repo.cursor()
-cursor.execute("select * from rooms where floor = 1")
-result = cursor.fetchall()
-
-for rad in result:
-    print(rad)
-    4
+        raise NotImplementedError

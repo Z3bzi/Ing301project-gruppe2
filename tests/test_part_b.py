@@ -1,13 +1,13 @@
 import unittest
 
 from pathlib import Path
-import sys 
-sys.path.append(str(Path().parent.absolute()))
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent.absolute()))
 
 from smarthouse.persistence import SmartHouseRepository
 
 class SmartHouseTest(unittest.TestCase):
-    file = Path(__file__).parent / "../data/db.sql"
+    file = Path(__file__).parent.parent / "data" / "db.sql"
     repo = SmartHouseRepository(file)
 
     def test_cursor(self):
