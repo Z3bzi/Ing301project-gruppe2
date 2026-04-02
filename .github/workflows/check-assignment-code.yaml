@@ -1,4 +1,4 @@
-name: Check assignment code
+name: Check assignment code - A
 
 on:
   push:
