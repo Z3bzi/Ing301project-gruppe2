@@ -67,6 +67,22 @@ class SmartHouseRepository:
                 device = Actuator(dev_id, kind, supplier, product)
             smarthouse.register_device(room_map[room_id], device)
         
+        # --- NY KODE FOR Å LASTE AKTUATOR-STATUS ---
+        # 1. Sjekk om tabellen i det hele tatt finnes (så det ikke kræsjer første gang)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='actuator_states'")
+        if cursor.fetchone():
+            # 2. Hent ut alle lagrede statuser
+            cursor.execute("SELECT device, state FROM actuator_states")
+            for row in cursor.fetchall():
+                dev_id, state = row
+                
+                # Finn aktuatoren i systemet (hvis den finnes)
+                device = smarthouse.get_device_by_id(dev_id)
+                
+                # Hvis den er lagret som 'på' (1), skru den på i Python
+                if device and state == 1:
+                    device.turn_on()
+        
         cursor.close()
         return smarthouse
 
@@ -75,19 +91,70 @@ class SmartHouseRepository:
         Retrieves the most recent sensor reading for the given sensor if available.
         Returns None if the given object has no sensor readings.
         """
-        # TODO: After loading the smarthouse, continue here
-        raise NotImplementedError
+        # TODO: After loading the smarthouse, continue here. 
+        # You will need to issue a SQL query that retrieves the most recent measurement for the given sensor, 
+        # e.g. by using `ORDER BY timestamp DESC LIMIT 1`. 
+        # Then you can instantiate a Measurement object with the retrieved data and return it. 
+        # If there is no measurement for the given sensor, return None.
+
+        # 1. Check if the given device is a sensor
+        if not sensor.is_sensor():
+            return None
+
+        # 2. Get a cursor
+        cursor = self.cursor()
+
+        # 3. Write the SQL
+        query = """
+            SELECT ts, value, unit
+            FROM measurements
+            WHERE device = ?
+            ORDER BY ts DESC
+            LIMIT 1
+        """
+
+        # 4. Execute the query with the sensor's id as parameter and fetch the result
+        cursor.execute(query, (sensor.id,))
+        row = cursor.fetchone()
+        
+        cursor.close()
+
+        # 5. If there is a result, create and return a Measurement object, otherwise return None
+        if row:
+            return Measurement(sensor, row[0], row[1], row[2])
+        
+        return None
 
 
     def update_actuator_state(self, actuator):
         """
         Saves the state of the given actuator in the database. 
         """
-        # TODO: Implement this method. You will probably need to extend the existing database structure: e.g.
-        #       by creating a new table (`CREATE`), adding some data to it (`INSERT`) first, and then issue
-        #       and SQL `UPDATE` statement. Remember also that you will have to call `commit()` on the `Connection`
-        #       stored in the `self.conn` instance variable.
-        pass
+        cursor = self.cursor()
+
+        # 1. Lag tabellen hvis den ikke finnes fra før
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS actuator_states (
+                device TEXT PRIMARY KEY,
+                state BOOLEAN NOT NULL
+            );
+        """)
+
+        # 2. Sett inn eller oppdater statusen. 
+        # 'INSERT OR REPLACE' fungerer som en "Upsert" i SQLite.
+        # Vi gjør om True/False til 1/0 for SQLite sin BOOLEAN-type.
+        state_value = 1 if actuator.is_active() else 0
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO actuator_states (device, state)
+            VALUES (?, ?);
+        """, (actuator.id, state_value))
+
+        # 3. VIKTIGSTE STEG: Commit endringene!
+        # Hvis vi ikke gjør dette, rulles alt tilbake når testen kaller reconnect()
+        self.conn.commit()
+        
+        cursor.close()
 
 
     # statistics
