@@ -170,9 +170,39 @@ class SmartHouseRepository:
         The result should be a dictionary where the keys are strings representing dates (iso format) and
         the values are floating point numbers containing the average temperature that day.
         """
-        # TODO: This and the following statistic method are a bit more challenging. Try to design the respective
-        #       SQL statements first in a SQL editor like Dbeaver and then copy it over here.
-        raise NotImplementedError
+        cursor = self.cursor()
+
+        # SQL Code for calculating average temperatures per day in the given room and time range
+        query = """
+            SELECT DATE(ts) as dato, AVG(value) as snitt 
+            FROM measurements
+            WHERE device IN (
+                SELECT id FROM devices
+                WHERE room = ? AND (kind LIKE '%Temperature%' OR kind LIKE '%Heat Pump%')
+            )
+            AND unit = '°C'
+            AND (? IS NULL OR DATE(ts) >= ?)
+            AND (? IS NULL OR DATE(ts) <= ?)
+            GROUP BY DATE(ts)
+            ORDER BY DATE(ts);
+        """
+
+        
+        params = (room.db_id, from_date, from_date, until_date, until_date)
+
+        cursor.execute(query, params) # Execute the query with the parameters
+        rows = cursor.fetchall() # Fetch all results and store in a variable.
+        cursor.close()
+
+        # Lag ordboken (Dictionary) som testen forventer
+        result = {}
+        for row in rows:
+            dato_streng = row[0]
+            gjennomsnitt = float(row[1]) # Gjør om til float
+            result[dato_streng] = gjennomsnitt
+
+        return result
+    
 
 
     def calc_hours_with_humidity_above(self, room, date: str) -> list:
@@ -182,5 +212,39 @@ class SmartHouseRepository:
         the average recorded humidity in that room at that particular time.
         The result is a (possibly empty) list of number representing hours [0-23].
         """
-        # TODO: implement
-        raise NotImplementedError
+        cursor = self.cursor()
+
+
+        query = """
+            SELECT CAST(strftime('%H', ts) AS INTEGER) AS hour
+            FROM measurements
+            WHERE device IN (
+                SELECT id FROM devices
+                WHERE room = ? AND kind LIKE '%Humidity%'
+            )
+            AND DATE(ts) = ?
+            AND value > (
+                SELECT AVG(value)
+                FROM measurements
+                WHERE device IN (
+                    SELECT id FROM devices
+                    WHERE room = ? AND kind LIKE '%Humidity%'
+                )
+                AND DATE(ts) = ?
+            )
+            GROUP BY hour
+            HAVING COUNT(*) > 3
+            ORDER BY hour;
+        """
+
+        # Vi sender inn room.db_id og date to ganger hver
+        cursor.execute(query, (room.db_id, date, room.db_id, date))
+        rows = cursor.fetchall()
+        cursor.close()
+
+        # Legg timene inn i en liste
+        result = []
+        for row in rows:
+            result.append(row[0]) # row[0] er allerede et heltall pga CAST i SQL-en!
+
+        return result
