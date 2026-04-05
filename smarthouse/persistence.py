@@ -141,8 +141,6 @@ class SmartHouseRepository:
         """)
 
         # 2. Sett inn eller oppdater statusen. 
-        # 'INSERT OR REPLACE' fungerer som en "Upsert" i SQLite.
-        # Vi gjør om True/False til 1/0 for SQLite sin BOOLEAN-type.
         state_value = 1 if actuator.is_active() else 0
         
         cursor.execute("""
@@ -150,14 +148,12 @@ class SmartHouseRepository:
             VALUES (?, ?);
         """, (actuator.id, state_value))
 
-        # 3. VIKTIGSTE STEG: Commit endringene!
+        # 3. Commit endringene
         # Hvis vi ikke gjør dette, rulles alt tilbake når testen kaller reconnect()
         self.conn.commit()
         
         cursor.close()
 
-
-    # statistics
 
     
     def calc_avg_temperatures_in_room(self, room, from_date: Optional[str] = None, until_date: Optional[str] = None) -> dict:
@@ -194,7 +190,7 @@ class SmartHouseRepository:
         rows = cursor.fetchall() # Fetch all results and store in a variable.
         cursor.close()
 
-        # Lag ordboken (Dictionary) som testen forventer
+        # Lag ordboken som testen forventer
         result = {}
         for row in rows:
             dato_streng = row[0]
@@ -214,7 +210,7 @@ class SmartHouseRepository:
         """
         cursor = self.cursor()
 
-
+        # SQL code for calculating the hours with more than three mesurements above the average humidity.
         query = """
             SELECT CAST(strftime('%H', ts) AS INTEGER) AS hour
             FROM measurements
